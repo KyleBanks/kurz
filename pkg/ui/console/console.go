@@ -128,6 +128,7 @@ func (w *Window) renderContentBody() {
 	var buf bytes.Buffer
 	for i, s := range w.doc.Headings[w.selectedHeading].Content {
 		buf.WriteString(fmt.Sprintf(`["%d"]%v[""]`, i, s.Text))
+		buf.WriteString("\n")
 	}
 	w.contentBody.SetText(buf.String())
 	w.setSelectedSection(0)
@@ -143,6 +144,7 @@ func (w *Window) setSelectedSection(selected int) {
 
 	w.selectedSection = selected
 	w.contentBody.Highlight(fmt.Sprintf("%d", selected))
+	w.contentBody.ScrollToHighlight()
 }
 
 func (w *Window) tableOfContentsInputHandler(event *tcell.EventKey) *tcell.EventKey {

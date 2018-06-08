@@ -4,6 +4,8 @@
 
 `kurz` allows you to view markdown documents on the command-line in a feature-rich UI. 
 
+!['depth' Readme Example](./docs/screenshot.png)
+
 ## Features
 
 - [TODO] Expand/collapse sections

@@ -12,7 +12,9 @@ import (
 	"gopkg.in/russross/blackfriday.v2"
 )
 
-type Markdown struct{}
+type Markdown struct {
+	Debug bool
+}
 
 func (m Markdown) Parse(content io.ReadCloser) (doc.Document, error) {
 	defer content.Close()
@@ -31,7 +33,7 @@ func (m Markdown) Parse(content io.ReadCloser) (doc.Document, error) {
 			return blackfriday.GoToNext
 		}
 
-		if node.Type != blackfriday.Heading || node.HeadingData.Level > 2 {
+		if node.Type != blackfriday.Heading {
 			return blackfriday.GoToNext
 		}
 
@@ -50,7 +52,7 @@ func (m Markdown) sectionContents(heading *blackfriday.Node) []doc.Section {
 	var sections []doc.Section
 
 	n := heading.Next
-	for n != nil && (n.Type != blackfriday.Heading || n.HeadingData.Level > 2) {
+	for n != nil && n.Type != blackfriday.Heading {
 		sections = append(sections, m.newSection(n))
 		n = n.Next
 	}
@@ -63,7 +65,7 @@ func (m Markdown) newSection(container *blackfriday.Node) doc.Section {
 
 	n := container
 	for n != nil {
-		str := strings.TrimSpace(m.nodeContents(n))
+		str := m.nodeContents(n)
 		if len(str) > 0 {
 			buf.WriteString(str)
 			if m.appendNewline(n) {
@@ -93,20 +95,19 @@ func (m Markdown) newSection(container *blackfriday.Node) doc.Section {
 }
 
 func (Markdown) skipChild(n *blackfriday.Node) bool {
-	switch n.Type {
-
-	case blackfriday.Heading:
-		fallthrough
-	case blackfriday.Link:
-		fallthrough
-	case blackfriday.List:
-		fallthrough
-	case blackfriday.Image:
-		return true
-
-	default:
-		return false
-	}
+	//	switch n.Type {
+	//
+	//	case blackfriday.Heading:
+	//		fallthrough
+	//	case blackfriday.Link:
+	//		fallthrough
+	//	case blackfriday.Image:
+	//		return true
+	//
+	//	default:
+	//		return false
+	//	}
+	return false
 }
 
 func (Markdown) appendNewline(n *blackfriday.Node) bool {
@@ -128,6 +129,10 @@ func (Markdown) appendNewline(n *blackfriday.Node) bool {
 }
 
 func (m Markdown) nodeContents(n *blackfriday.Node) string {
+	if m.Debug {
+		fmt.Printf("Type=%v, Literal=%s\n", n.Type, n.Literal)
+	}
+
 	switch n.Type {
 
 	case blackfriday.Heading:
@@ -142,14 +147,14 @@ func (m Markdown) nodeContents(n *blackfriday.Node) string {
 	// Text nodes
 	case blackfriday.Code:
 		return fmt.Sprintf("`%s`", n.Literal)
-	case blackfriday.Item:
-		fallthrough
 	case blackfriday.Paragraph:
 		fallthrough
 	case blackfriday.Text:
 		return string(n.Literal)
 
 	// Skip nodes
+	case blackfriday.List:
+		fallthrough
 	case blackfriday.Document:
 		return ""
 
@@ -160,16 +165,10 @@ func (m Markdown) nodeContents(n *blackfriday.Node) string {
 			return fmt.Sprintf("%v <%s>", text, n.LinkData.Destination)
 		}
 		return fmt.Sprintf("<%s>", n.LinkData.Destination)
-	case blackfriday.List:
-		item := n.FirstChild
-		var buf bytes.Buffer
-		for item != nil {
-			buf.WriteString(fmt.Sprintf("%s %v\n", []byte{item.BulletChar}, strings.TrimSpace(m.nodeContents(item))))
-			item = item.Next
-		}
-		return buf.String()
+	case blackfriday.Item:
+		return fmt.Sprintf("%s ", []byte{n.ListData.BulletChar})
 
-		// TODO: image
+	// TODO: image
 
 	default:
 		return fmt.Sprintf("Type=%v\n", n.Type)
