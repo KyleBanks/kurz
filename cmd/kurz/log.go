@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -19,7 +18,7 @@ func logError(err error) {
 	os.Exit(1)
 }
 
-func printUsage() {
+func printUsage(code int) {
 	name := os.Args[0]
 
 	log(`%v allows you to view markdown documents on the command-line in a feature-rich UI. 
@@ -33,7 +32,6 @@ Example:
   %v http://example.com/document.md
   %v github.com/KyleBanks/modoc
 
-Options:`, name, name, name, name, name)
-	flag.PrintDefaults()
-	log("\nTo print this message, use the '--help' flag.")
+To print this message, use the '--help' flag.`, name, name, name, name, name)
+	os.Exit(code)
 }

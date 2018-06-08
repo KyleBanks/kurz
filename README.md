@@ -1,19 +1,20 @@
 # kurz
 
-kurz allows you to view markdown documents on the command-line in a feature-rich UI. 
+**This project is very early and is in active development!**
+
+`kurz` allows you to view markdown documents on the command-line in a feature-rich UI. 
 
 ## Features
 
-- Expand/collapse sections
-- Copy selected text to your clipboard
-- Load remote or local files
-- Cache remote files for offline access
-- Automatically discover README of remote Git repositories on GitHub, BitBucket and GitLab
+- [TODO] Expand/collapse sections
+- [TODO] Copy selected text to your clipboard
+- [TODO] Load remote or local files
+- [TODO] Cache remote files for offline access
+- [TODO] Automatically discover README of remote Git repositories on GitHub, BitBucket and GitLab
 
 ## Usage
 
-There are three primary uses of `kurz`:
-
+There are three primary ways to use `kurz`:
 
 1. Load a local markdown file: 
 
@@ -32,7 +33,3 @@ $ kurz https://example.com/markdown-file.md
 ```
 $ kurz github.com/KyleBanks/depth
 ```
-
-## Options
-
-`-raw` prints the markdown document as plain text to the console.

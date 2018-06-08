@@ -39,6 +39,7 @@ func (m Markdown) Parse(content io.ReadCloser) (doc.Document, error) {
 			Title:   m.nodeContents(node),
 			Content: m.sectionContents(node),
 		})
+
 		return blackfriday.SkipChildren
 	})
 
@@ -81,8 +82,13 @@ func (m Markdown) newSection(container *blackfriday.Node) doc.Section {
 		}
 	}
 
+	text := buf.String()
+	if !strings.HasSuffix(text, "\n") {
+		text += "\n"
+	}
+
 	return doc.Section{
-		Text: buf.String(),
+		Text: text,
 	}
 }
 

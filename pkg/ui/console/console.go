@@ -1,6 +1,7 @@
 package console
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/KyleBanks/kurz/pkg/doc"
@@ -25,12 +26,13 @@ type Window struct {
 
 	tableOfContents     tview.Primitive
 	tableOfContentsList *tview.List
-	contentBody         *tview.Table
+	contentBody         *tview.TextView
 
 	doc doc.Document
 
 	focusMode       FocusMode
 	selectedHeading int
+	selectedSection int
 }
 
 func NewWindow() *Window {
@@ -105,10 +107,13 @@ func (w *Window) renderTableOfContents() {
 	}
 }
 
-func (w *Window) ContentBody() *tview.Table {
+func (w *Window) ContentBody() *tview.TextView {
 	if w.contentBody == nil {
-		w.contentBody = tview.NewTable().
-			SetSelectable(true, false)
+		w.contentBody = tview.NewTextView().
+			SetRegions(true).
+			SetWrap(true).
+			SetWordWrap(true).
+			SetScrollable(true)
 	}
 
 	return w.contentBody
@@ -116,20 +121,38 @@ func (w *Window) ContentBody() *tview.Table {
 
 func (w *Window) renderContentBody() {
 	w.contentBody.Clear()
-	if w.doc.Headings != nil {
-		for i, s := range w.doc.Headings[w.selectedHeading].Content {
-			w.contentBody.SetCell(i, 0,
-				tview.NewTableCell(s.Text).
-					SetSelectable(true))
-		}
+	if w.doc.Headings == nil {
+		return
 	}
+
+	var buf bytes.Buffer
+	for i, s := range w.doc.Headings[w.selectedHeading].Content {
+		buf.WriteString(fmt.Sprintf(`["%d"]%v[""]`, i, s.Text))
+	}
+	w.contentBody.SetText(buf.String())
+	w.setSelectedSection(0)
+}
+
+func (w *Window) setSelectedSection(selected int) {
+	numSections := len(w.doc.Headings[w.selectedHeading].Content)
+	if selected < 0 {
+		selected = 0
+	} else if selected >= numSections {
+		selected = numSections - 1
+	}
+
+	w.selectedSection = selected
+	w.contentBody.Highlight(fmt.Sprintf("%d", selected))
 }
 
 func (w *Window) tableOfContentsInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Key() {
+
+	// Exit the application
 	case tcell.KeyEscape:
 		w.Stop()
 
+	// Focus on the content
 	case tcell.KeyRight:
 		fallthrough
 	case tcell.KeyEnter:
@@ -146,11 +169,19 @@ func (w *Window) tableOfContentsInputHandler(event *tcell.EventKey) *tcell.Event
 
 func (w *Window) contentInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Key() {
+
+	// Go back to the Table of Contents
 	case tcell.KeyLeft:
 		fallthrough
 	case tcell.KeyEscape:
 		w.setFocusMode(FocusTableOfContents)
 		return nil
+
+	// Manage content selection
+	case tcell.KeyUp:
+		w.setSelectedSection(w.selectedSection - 1)
+	case tcell.KeyDown:
+		w.setSelectedSection(w.selectedSection + 1)
 
 	// Ignore keys, don't bubble up the event.
 	case tcell.KeyRight:
