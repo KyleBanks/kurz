@@ -18,7 +18,7 @@ func init() {
 		printUsage(1)
 	}
 
-	switch arg := os.Args[1]; path {
+	switch arg := os.Args[1]; arg {
 
 	case "-h":
 		fallthrough
