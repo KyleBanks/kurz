@@ -21,6 +21,12 @@
 - **TODO** Automatically discover README of remote Git repositories on GitHub, BitBucket and GitLab
 - **TODO** Syntax highlighting for code snippets
 
+## Installation
+
+```
+$ go get github.com/KyleBanks/kurz/cmd/kurz
+```
+
 ## Usage
 
 There are three primary ways to use `kurz`:
