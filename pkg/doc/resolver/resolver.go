@@ -20,14 +20,16 @@ var (
 
 // Chain runs a sequence of doc.Resolver types, returning the first
 // content to be successfully resolved.
-//
-// If any of the resolvers returns an error other than ErrInvalidPath,
-// the error will be returned. If none of the resolvers are able to
-// resolve a content body, an ErrInvalidPath error is returned.
 type Chain struct {
 	Resolvers []doc.Resolver
 }
 
+// Resolve attempts to resolve the provided path using all of the
+// underlying resolvers in the chain.
+//
+// If any of the resolvers returns an error other than ErrInvalidPath,
+// the error will be returned. If none of the resolvers are able to
+// resolve a content body, an ErrInvalidPath error is returned.
 func (c Chain) Resolve(path string) (io.ReadCloser, error) {
 	for _, r := range c.Resolvers {
 		content, err := r.Resolve(path)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/KyleBanks/kurz/pkg/debug"
 	"github.com/KyleBanks/kurz/pkg/doc"
 
 	"github.com/gdamore/tcell"
@@ -20,13 +21,13 @@ const (
 type Window struct {
 	*tview.Application
 
-	root *tview.Grid
+	root *tview.Flex
 
 	modal *tview.Modal
 
-	tableOfContents     tview.Primitive
-	tableOfContentsList *tview.List
-	contentBody         *tview.TextView
+	tableOfContents *tview.List
+	contentBody     *tview.TextView
+	commandBar      *tview.TextView
 
 	doc doc.Document
 
@@ -40,10 +41,14 @@ func NewWindow() *Window {
 
 	w.modal = tview.NewModal()
 
-	w.root = tview.NewGrid().
-		SetBorders(true).
-		AddItem(w.TableOfContents(), 0, 0, 1, 1, 0, 0, false).
-		AddItem(w.ContentBody(), 0, 1, 1, 3, 0, 0, false)
+	w.root = tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(tview.NewGrid().
+			SetBorders(true).
+			AddItem(w.TableOfContents(), 0, 0, 1, 1, 0, 0, false).
+			AddItem(w.ContentBody(), 0, 1, 1, 3, 0, 0, false),
+			0, 1, false).
+		AddItem(w.CommandBar(), 1, 1, false)
 
 	w.Application = tview.NewApplication().
 		SetRoot(w.root, true)
@@ -74,46 +79,55 @@ func (w *Window) setFocusMode(f FocusMode) {
 	switch f {
 	case FocusTableOfContents:
 		w.SetInputCapture(w.tableOfContentsInputHandler)
-		w.SetFocus(w.tableOfContentsList)
+		w.SetFocus(w.tableOfContents)
+		w.ContentBody().Highlight()
 	case FocusContent:
 		w.SetInputCapture(w.contentInputHandler)
 		w.SetFocus(w.ContentBody())
+		w.setSelectedSection(0)
 	}
+
+	w.renderCommandBar()
+
+	// Draw to ensure that the highlight is updated. This is important when
+	// switching focus as the highlight functions don't always trigger a
+	// new draw.
+	w.Draw()
 }
 
-func (w *Window) TableOfContents() tview.Primitive {
+func (w *Window) TableOfContents() *tview.List {
 	if w.tableOfContents == nil {
-		header := tview.NewTextView().
-			SetTextAlign(tview.AlignCenter).
-			SetDynamicColors(true).
-			SetText("[purple::bu]Table of Contents")
-
-		w.tableOfContentsList = tview.NewList().
+		w.tableOfContents = tview.NewList().
 			SetChangedFunc(w.tableOfContentsSelectionHandler)
-
-		w.tableOfContents = tview.NewGrid().
-			AddItem(header, 0, 0, 1, 1, 0, 0, false).
-			AddItem(w.tableOfContentsList, 1, 0, 10, 1, 0, 0, false)
 	}
 
 	return w.tableOfContents
 }
 
 func (w *Window) renderTableOfContents() {
-	w.tableOfContentsList.Clear()
+	w.tableOfContents.Clear()
 	for _, h := range w.doc.Headings {
-		// TODO: Use first char as the shortcut
-		w.tableOfContentsList.AddItem(fmt.Sprintf("%-20s", h.Title), "", 0, nil)
+		text := h.Title
+		if h.Level <= 2 {
+			text = Styler{}.Style(text, doc.Bold)
+		}
+
+		for i := 0; i < h.Level-1; i++ {
+			text = " " + text
+		}
+
+		w.tableOfContents.AddItem(text, "", 0, nil)
 	}
 }
 
 func (w *Window) ContentBody() *tview.TextView {
 	if w.contentBody == nil {
 		w.contentBody = tview.NewTextView().
+			SetDynamicColors(!debug.Enabled).
 			SetRegions(true).
+			SetScrollable(true).
 			SetWrap(true).
-			SetWordWrap(true).
-			SetScrollable(true)
+			SetWordWrap(true)
 	}
 
 	return w.contentBody
@@ -131,15 +145,45 @@ func (w *Window) renderContentBody() {
 		buf.WriteString("\n")
 	}
 	w.contentBody.SetText(buf.String())
-	w.setSelectedSection(0)
+	w.contentBody.ScrollToBeginning()
+}
+
+func (w *Window) CommandBar() *tview.TextView {
+	if w.commandBar == nil {
+		w.commandBar = tview.NewTextView().
+			SetDynamicColors(true).
+			SetWrap(false)
+	}
+
+	return w.commandBar
+}
+
+func (w *Window) renderCommandBar() {
+	w.commandBar.Clear()
+
+	var cmds []command
+	switch w.focusMode {
+
+	case FocusTableOfContents:
+		cmds = commandsTableOfContents
+	case FocusContent:
+		cmds = commandsContent
+	}
+
+	var buf bytes.Buffer
+	for _, c := range cmds {
+		buf.WriteString(c.String())
+		buf.WriteString("   ")
+	}
+	w.commandBar.SetText(buf.String())
 }
 
 func (w *Window) setSelectedSection(selected int) {
 	numSections := len(w.doc.Headings[w.selectedHeading].Content)
 	if selected < 0 {
-		selected = 0
-	} else if selected >= numSections {
 		selected = numSections - 1
+	} else if selected >= numSections {
+		selected = 0
 	}
 
 	w.selectedSection = selected

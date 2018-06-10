@@ -1,8 +1,12 @@
-default: | install example-local
+default: | install test example-local
 
 install:
 	@go install -v ./cmd/kurz
 .PHONY: install
+
+test: 
+	@go test -cover ./...
+.PHONY: test
 
 help: | install
 	@kurz -h

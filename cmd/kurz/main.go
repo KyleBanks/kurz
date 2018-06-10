@@ -39,7 +39,7 @@ func main() {
 			resolver.Git{},
 		},
 	}
-	var p parser.Markdown
+	p := parser.NewMarkdown(console.Styler{})
 
 	runWithTUI(r, p)
 }
