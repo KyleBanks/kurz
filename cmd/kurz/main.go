@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/KyleBanks/kurz/pkg/debug"
 	"github.com/KyleBanks/kurz/pkg/doc"
 	"github.com/KyleBanks/kurz/pkg/doc/parser"
 	"github.com/KyleBanks/kurz/pkg/doc/resolver"
@@ -27,8 +28,9 @@ func init() {
 
 	default:
 		path = arg
-
 	}
+
+	debug.Enabled = os.Getenv("KURZ_DEBUG") == "true"
 }
 
 func main() {

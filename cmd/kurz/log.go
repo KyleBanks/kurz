@@ -8,7 +8,7 @@ import (
 
 func log(msg string, a ...interface{}) {
 	if !strings.HasSuffix(msg, "\n") {
-		msg = msg + "\n"
+		msg += "\n"
 	}
 	fmt.Printf(msg, a...)
 }

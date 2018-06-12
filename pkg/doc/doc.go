@@ -34,10 +34,10 @@ type Parser interface {
 }
 
 type Document struct {
-	Headings []Heading
+	Headers []Header
 }
 
-type Heading struct {
+type Header struct {
 	Title   string
 	Level   int
 	Content []Section

@@ -13,6 +13,7 @@ var (
 		{" ⬅ / ESC ", "Go Back"},
 		{"⬆ ", "Up"},
 		{"⬇ ", "Down"},
+		{" SPACE ", "Collapse"},
 	}
 )
 

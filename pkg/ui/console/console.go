@@ -15,7 +15,7 @@ type FocusMode int
 
 const (
 	FocusTableOfContents FocusMode = iota
-	FocusContent         FocusMode = iota
+	FocusContent
 )
 
 type Window struct {
@@ -32,14 +32,17 @@ type Window struct {
 	doc doc.Document
 
 	focusMode       FocusMode
-	selectedHeading int
+	selectedHeader  int
 	selectedSection int
+
+	contentState *contentState
 }
 
 func NewWindow() *Window {
-	var w Window
-
-	w.modal = tview.NewModal()
+	w := Window{
+		modal:        tview.NewModal(),
+		contentState: newContentState(),
+	}
 
 	w.root = tview.NewFlex().
 		SetDirection(tview.FlexRow).
@@ -58,7 +61,7 @@ func NewWindow() *Window {
 
 func (w *Window) ShowMessage(msg string) {
 	w.modal.SetText(msg)
-	w.SetRoot(w.modal, false)
+	w.SetRoot(w.modal, true)
 }
 
 func (w *Window) HideMessage() {
@@ -106,7 +109,7 @@ func (w *Window) TableOfContents() *tview.List {
 
 func (w *Window) renderTableOfContents() {
 	w.tableOfContents.Clear()
-	for _, h := range w.doc.Headings {
+	for _, h := range w.doc.Headers {
 		text := h.Title
 		if h.Level <= 2 {
 			text = Styler{}.Style(text, doc.Bold)
@@ -135,13 +138,18 @@ func (w *Window) ContentBody() *tview.TextView {
 
 func (w *Window) renderContentBody() {
 	w.contentBody.Clear()
-	if w.doc.Headings == nil {
+	if w.doc.Headers == nil {
 		return
 	}
 
 	var buf bytes.Buffer
-	for i, s := range w.doc.Headings[w.selectedHeading].Content {
-		buf.WriteString(fmt.Sprintf(`["%d"]%v[""]`, i, s.Text))
+	for i, s := range w.getSelectedHeader().Content {
+		text := s.Text
+		if special := w.contentState.get(w.selectedHeader, i); len(special) > 0 {
+			text = special
+		}
+
+		buf.WriteString(fmt.Sprintf(`["%d"]%v[""]`, i, text))
 		buf.WriteString("\n")
 	}
 	w.contentBody.SetText(buf.String())
@@ -178,8 +186,21 @@ func (w *Window) renderCommandBar() {
 	w.commandBar.SetText(buf.String())
 }
 
+func (w *Window) getSelectedHeader() doc.Header {
+	return w.doc.Headers[w.selectedHeader]
+}
+
+func (w *Window) setSelectedHeader(selected int) {
+	if selected < 0 || selected >= len(w.doc.Headers) {
+		return
+	}
+
+	w.selectedHeader = selected
+	w.renderContentBody()
+}
+
 func (w *Window) setSelectedSection(selected int) {
-	numSections := len(w.doc.Headings[w.selectedHeading].Content)
+	numSections := len(w.getSelectedHeader().Content)
 	if selected < 0 {
 		selected = numSections - 1
 	} else if selected >= numSections {
@@ -189,6 +210,20 @@ func (w *Window) setSelectedSection(selected int) {
 	w.selectedSection = selected
 	w.contentBody.Highlight(fmt.Sprintf("%d", selected))
 	w.contentBody.ScrollToHighlight()
+}
+
+func (w *Window) collapseSection(idx int) {
+	if idx < 0 || idx >= len(w.getSelectedHeader().Content) {
+		return
+	}
+
+	if state := w.contentState.get(w.selectedHeader, idx); state == collapsedContent {
+		w.contentState.clear(w.selectedHeader, idx)
+	} else {
+		w.contentState.set(w.selectedHeader, idx, collapsedContent)
+	}
+
+	w.renderContentBody()
 }
 
 func (w *Window) tableOfContentsInputHandler(event *tcell.EventKey) *tcell.EventKey {
@@ -229,6 +264,9 @@ func (w *Window) contentInputHandler(event *tcell.EventKey) *tcell.EventKey {
 	case tcell.KeyDown:
 		w.setSelectedSection(w.selectedSection + 1)
 
+	case tcell.Key(256):
+		w.collapseSection(w.selectedSection)
+
 	// Ignore keys, don't bubble up the event.
 	case tcell.KeyRight:
 		return nil
@@ -238,6 +276,5 @@ func (w *Window) contentInputHandler(event *tcell.EventKey) *tcell.EventKey {
 }
 
 func (w *Window) tableOfContentsSelectionHandler(index int, mainText, secondaryText string, shortcut rune) {
-	w.selectedHeading = index
-	w.renderContentBody()
+	w.setSelectedHeader(index)
 }

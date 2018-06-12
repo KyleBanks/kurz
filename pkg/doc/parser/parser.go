@@ -40,7 +40,7 @@ func (m Markdown) Parse(r io.Reader) (doc.Document, error) {
 			return blackfriday.GoToNext
 		}
 
-		d.Headings = append(d.Headings, doc.Heading{
+		d.Headers = append(d.Headers, doc.Header{
 			Title:   m.nodeContents(node),
 			Level:   node.HeadingData.Level,
 			Content: m.sectionContents(node),
@@ -140,9 +140,7 @@ func (Markdown) skipNext(n *blackfriday.Node) bool {
 }
 
 func (m Markdown) nodeContents(n *blackfriday.Node) string {
-	if debug.Enabled {
-		fmt.Printf("Type=%v, Literal=%s\n", n.Type, n.Literal)
-	}
+	debug.Log("Type=%v, Literal=%s\n", n.Type, n.Literal)
 
 	switch n.Type {
 

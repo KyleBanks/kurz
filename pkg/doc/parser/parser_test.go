@@ -11,13 +11,13 @@ func TestMarkdown_Parse_Basic(t *testing.T) {
 	m := NewMarkdown(doc.NopStyler{})
 
 	d, err := m.Parse(bytes.NewBufferString(`
-# Heading 1
+# Header 1
 
 Text goes here.
 
 Another paragraph.
 
-## Heading 2
+## Header 2
 
 And here's some ` + "`" + `code` + "`" + `.
 	`))
@@ -26,26 +26,26 @@ And here's some ` + "`" + `code` + "`" + `.
 	}
 
 	assertDocsEqual(t, d, doc.Document{
-		Headings: []doc.Heading{
-			{Title: "Heading 1", Level: 1, Content: []doc.Section{
-				{"Text goes here.\n"},
-				{"Another paragraph.\n"},
+		Headers: []doc.Header{
+			{Title: "Header 1", Level: 1, Content: []doc.Section{
+				{Text: "Text goes here.\n"},
+				{Text: "Another paragraph.\n"},
 			}},
-			{Title: "Heading 2", Level: 2, Content: []doc.Section{
-				{"And here's some code.\n"},
+			{Title: "Header 2", Level: 2, Content: []doc.Section{
+				{Text: "And here's some code.\n"},
 			}},
 		},
 	})
 }
 
 func assertDocsEqual(t *testing.T, got, exp doc.Document) {
-	if len(got.Headings) != len(exp.Headings) {
-		t.Fatalf("Heading count mismatch, expected=%v, got=%v", len(exp.Headings), len(got.Headings))
+	if len(got.Headers) != len(exp.Headers) {
+		t.Fatalf("Header count mismatch, expected=%v, got=%v", len(exp.Headers), len(got.Headers))
 	}
 
-	for h := 0; h < len(got.Headings); h++ {
-		h1 := got.Headings[h]
-		h2 := exp.Headings[h]
+	for h := 0; h < len(got.Headers); h++ {
+		h1 := got.Headers[h]
+		h2 := exp.Headers[h]
 		if h1.Title != h2.Title {
 			t.Errorf("[h=%v] Unexpected title, expected=%v, got=%v", h, h2.Title, h1.Title)
 		}
