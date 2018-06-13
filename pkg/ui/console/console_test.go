@@ -25,8 +25,8 @@ func TestNewWindow(t *testing.T) {
 	if w.contentBody == nil {
 		t.Error("Unexpected nil contentBody")
 	}
-	if w.commandBar == nil {
-		t.Error("Unexpected nil commandBar")
+	if w.inputBar == nil {
+		t.Error("Unexpected nil inputBar")
 	}
 	if w.contentState == nil {
 		t.Errorf("Unexpected nil contentState")
@@ -47,8 +47,8 @@ func TestWindow_RenderDocument(t *testing.T) {
 		t.Errorf("Unexpected w.doc, expected=%v, got=%v", d, w.doc)
 	}
 
-	if w.focusMode != FocusTableOfContents {
-		t.Errorf("Unexpected w.focusMode, expected=%v, got=%v", w.focusMode, FocusTableOfContents)
+	if w.focusMode != focusTableOfContents {
+		t.Errorf("Unexpected w.focusMode, expected=%v, got=%v", w.focusMode, focusTableOfContents)
 	}
 
 	if w.tableOfContents.GetItemCount() != len(d.Headers) {

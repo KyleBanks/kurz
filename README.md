@@ -15,7 +15,7 @@
 ## Features
 
 - Expand/collapse content sections.
-- **TODO** Copy selected text to your clipboard.
+- Copy content text to your clipboard.
 - **TODO** Load remote or local files.
 - **TODO** Cache remote files for offline access.
 - **TODO** Automatically discover README of remote Git repositories on GitHub, BitBucket and GitLab.

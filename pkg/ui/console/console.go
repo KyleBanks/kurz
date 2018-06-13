@@ -7,15 +7,15 @@ import (
 	"github.com/KyleBanks/kurz/pkg/debug"
 	"github.com/KyleBanks/kurz/pkg/doc"
 
-	"github.com/gdamore/tcell"
+	"github.com/atotto/clipboard"
 	"github.com/rivo/tview"
 )
 
-type FocusMode int
+type focusMode int
 
 const (
-	FocusTableOfContents FocusMode = iota
-	FocusContent
+	focusTableOfContents focusMode = iota
+	focusContent
 )
 
 type Window struct {
@@ -27,15 +27,16 @@ type Window struct {
 
 	tableOfContents *tview.List
 	contentBody     *tview.TextView
-	commandBar      *tview.TextView
+	inputBar        *tview.TextView
 
 	doc doc.Document
 
-	focusMode       FocusMode
+	focusMode       focusMode
 	selectedHeader  int
 	selectedSection int
 
 	contentState *contentState
+	inputHandler *inputHandler
 }
 
 func NewWindow() *Window {
@@ -51,10 +52,12 @@ func NewWindow() *Window {
 			AddItem(w.TableOfContents(), 0, 0, 1, 1, 0, 0, false).
 			AddItem(w.ContentBody(), 0, 1, 1, 3, 0, 0, false),
 			0, 1, false).
-		AddItem(w.CommandBar(), 1, 1, false)
+		AddItem(w.InputBar(), 1, 1, false)
 
 	w.Application = tview.NewApplication().
 		SetRoot(w.root, true)
+
+	w.inputHandler = newInputHandler(&w)
 
 	return &w
 }
@@ -73,24 +76,23 @@ func (w *Window) RenderDocument(d doc.Document) {
 
 	w.doc = d
 	w.renderTableOfContents()
-	w.setFocusMode(FocusTableOfContents)
+	w.setFocusMode(focusTableOfContents)
 }
 
-func (w *Window) setFocusMode(f FocusMode) {
+func (w *Window) setFocusMode(f focusMode) {
 	w.focusMode = f
 
 	switch f {
-	case FocusTableOfContents:
-		w.SetInputCapture(w.tableOfContentsInputHandler)
+	case focusTableOfContents:
 		w.SetFocus(w.tableOfContents)
 		w.ContentBody().Highlight()
-	case FocusContent:
-		w.SetInputCapture(w.contentInputHandler)
+	case focusContent:
 		w.SetFocus(w.ContentBody())
 		w.setSelectedSection(0)
 	}
 
-	w.renderCommandBar()
+	w.inputHandler.setFocusMode(f)
+	w.renderInputBar()
 
 	// Draw to ensure that the highlight is updated. This is important when
 	// switching focus as the highlight functions don't always trigger a
@@ -156,34 +158,19 @@ func (w *Window) renderContentBody() {
 	w.contentBody.ScrollToBeginning()
 }
 
-func (w *Window) CommandBar() *tview.TextView {
-	if w.commandBar == nil {
-		w.commandBar = tview.NewTextView().
+func (w *Window) InputBar() *tview.TextView {
+	if w.inputBar == nil {
+		w.inputBar = tview.NewTextView().
 			SetDynamicColors(true).
 			SetWrap(false)
 	}
 
-	return w.commandBar
+	return w.inputBar
 }
 
-func (w *Window) renderCommandBar() {
-	w.commandBar.Clear()
-
-	var cmds []command
-	switch w.focusMode {
-
-	case FocusTableOfContents:
-		cmds = commandsTableOfContents
-	case FocusContent:
-		cmds = commandsContent
-	}
-
-	var buf bytes.Buffer
-	for _, c := range cmds {
-		buf.WriteString(c.String())
-		buf.WriteString("   ")
-	}
-	w.commandBar.SetText(buf.String())
+func (w *Window) renderInputBar() {
+	w.inputBar.Clear()
+	w.inputBar.SetText(w.inputHandler.String())
 }
 
 func (w *Window) getSelectedHeader() doc.Header {
@@ -213,7 +200,7 @@ func (w *Window) setSelectedSection(selected int) {
 }
 
 func (w *Window) collapseSection(idx int) {
-	if idx < 0 || idx >= len(w.getSelectedHeader().Content) {
+	if !w.isValidSectionIndex(idx) {
 		return
 	}
 
@@ -226,53 +213,19 @@ func (w *Window) collapseSection(idx int) {
 	w.renderContentBody()
 }
 
-func (w *Window) tableOfContentsInputHandler(event *tcell.EventKey) *tcell.EventKey {
-	switch event.Key() {
-
-	// Exit the application
-	case tcell.KeyEscape:
-		w.Stop()
-
-	// Focus on the content
-	case tcell.KeyRight:
-		fallthrough
-	case tcell.KeyEnter:
-		w.setFocusMode(FocusContent)
-		return nil
-
-	// Ignore keys, don't bubble up the event.
-	case tcell.KeyLeft:
-		return nil
+func (w *Window) copySection(idx int) {
+	if !w.isValidSectionIndex(idx) {
+		return
 	}
 
-	return event
+	// Use GetRegionText to have the formatting stripped from the
+	// content, including colors/bolding/etc.
+	text := w.contentBody.GetRegionText(fmt.Sprintf("%d", idx))
+	clipboard.WriteAll(text)
 }
 
-func (w *Window) contentInputHandler(event *tcell.EventKey) *tcell.EventKey {
-	switch event.Key() {
-
-	// Go back to the Table of Contents
-	case tcell.KeyLeft:
-		fallthrough
-	case tcell.KeyEscape:
-		w.setFocusMode(FocusTableOfContents)
-		return nil
-
-	// Manage content selection
-	case tcell.KeyUp:
-		w.setSelectedSection(w.selectedSection - 1)
-	case tcell.KeyDown:
-		w.setSelectedSection(w.selectedSection + 1)
-
-	case tcell.Key(256):
-		w.collapseSection(w.selectedSection)
-
-	// Ignore keys, don't bubble up the event.
-	case tcell.KeyRight:
-		return nil
-	}
-
-	return event
+func (w *Window) isValidSectionIndex(idx int) bool {
+	return idx >= 0 && idx < len(w.getSelectedHeader().Content)
 }
 
 func (w *Window) tableOfContentsSelectionHandler(index int, mainText, secondaryText string, shortcut rune) {

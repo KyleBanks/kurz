@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/atotto/clipboard"
+  packages = ["."]
+  revision = "5e2c7bddca04488284428a201e4a15615f7a5074"
+
+[[projects]]
+  branch = "master"
   name = "github.com/gdamore/encoding"
   packages = ["."]
   revision = "b23993cbb6353f0e6aa98d0ee318a34728f628b9"
@@ -61,6 +67,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "226da754ee586ef66b4f8e9ee25a0d3c82411b44d197a746b83c8d4ef55f63ea"
+  inputs-digest = "47cfad6b19f37d0694254b378b06032afe2c77e0cdf99d90337734c3d2c04548"
   solver-name = "gps-cdcl"
   solver-version = 1
