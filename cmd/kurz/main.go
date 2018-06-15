@@ -43,25 +43,24 @@ func main() {
 	}
 	p := parser.NewMarkdown(console.Styler{})
 
-	runWithTUI(r, p)
+	runWithConsole(r, p)
 }
 
-func runWithTUI(r doc.Resolver, p doc.Parser) {
+func runWithConsole(r doc.Resolver, p doc.Parser) {
 	w := console.NewWindow()
 	w.ShowMessage(fmt.Sprintf("Loading %v...", path))
 
-	go render(w, path, r, p, logError)
+	go render(w, path, r, p)
 
 	if err := w.Run(); err != nil {
 		logError(err)
 	}
 }
 
-func render(c ui.Canvas, path string, r doc.Resolver, p doc.Parser, onErr func(error)) {
+func render(c ui.Canvas, path string, r doc.Resolver, p doc.Parser) {
 	d, err := doc.NewDocument(path, r, p)
 	if err != nil {
-		onErr(err)
-		return
+		logError(err)
 	}
 
 	c.RenderDocument(d)

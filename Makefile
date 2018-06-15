@@ -5,8 +5,7 @@ install:
 .PHONY: install
 
 test: 
-	@go vet ./...
-	@go test -cover ./...
+	@go test -vet -all -cover ./...
 .PHONY: test
 
 help: | install

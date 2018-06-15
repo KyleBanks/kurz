@@ -16,9 +16,9 @@
 
 - Expand/collapse content sections.
 - Copy content text to your clipboard.
-- **TODO** Load remote or local files.
-- **TODO** Cache remote files for offline access.
+- Load remote or local files.
 - **TODO** Automatically discover README of remote Git repositories on GitHub, BitBucket and GitLab.
+- **TODO** Cache remote files for offline access.
 - **TODO** Syntax highlighting for code snippets.
 
 ## Installation
