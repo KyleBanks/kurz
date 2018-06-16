@@ -17,11 +17,6 @@ var (
 	// For example, if you pass a remote URL to a resolver.File,
 	// you'll receive this error.
 	ErrInvalidPath = errors.New("cannot resolve the path provided")
-
-	readmeFileNames = []string{
-		"README.md", "readme.md", "Readme.md",
-		"README",
-	}
 )
 
 // HttpGetter defines a type that can send GET requests
@@ -105,12 +100,4 @@ func (u URL) Resolve(url string) (io.ReadCloser, error) {
 	}
 
 	return resp.Body, nil
-}
-
-// Git can be used to resolve a README file from its Git repository.
-type Git struct{}
-
-// Resolve attempts to find a load a remote README file from a git repository.
-func (Git) Resolve(repo string) (io.ReadCloser, error) {
-	return nil, ErrInvalidPath
 }
